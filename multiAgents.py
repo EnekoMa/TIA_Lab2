@@ -307,15 +307,64 @@ def betterEvaluationFunction(currentGameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: 
+    La función evalúa un estado combinando la puntuación actual con factores de
+    proximidad a la comida y cápsulas, y la distancia a los fantasmas (considerando
+    si están asustados o activos) para guiar a Pacman a maximizar su ganancia y 
+    minimizar el riesgo.
     """
     pacman_pos = currentGameState.getPacmanPosition()
-    newFood = currentGameState.getFood()
-    newGhostStates = currentGameState.getGhostStates()
-    newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+    food_list = currentGameState.getFood().asList()
+    ghost_states = currentGameState.getGhostStates()
+    capsule_list = currentGameState.getCapsules()
 
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Puntuación base del juego
+    score = currentGameState.getScore()
+
+    # 1. Feature: Comida (Food)
+    # Penalización por la cantidad de comida restante (para minimizar este número)
+    score -= 4.0 * len(food_list)
+
+    # Incentivo por el inverso de la distancia a la comida más cercana.
+    if food_list:
+        min_food_dist = min(manhattanDistance(pacman_pos, food_pos) for food_pos in food_list)
+        # 10.0 es un peso razonable.
+        if min_food_dist > 0:
+            score += 10.0 / min_food_dist
+
+    # 2. Feature: Cápsulas (Power Pellets)
+    # Penalización alta por las cápsulas que quedan.
+    score -= 100.0 * len(capsule_list)
+    
+    # Incentivo por el inverso de la distancia a la cápsula más cercana.
+    if capsule_list:
+        min_capsule_dist = min(manhattanDistance(pacman_pos, capsule_pos) for capsule_pos in capsule_list)
+        # 15.0 es un incentivo moderado a acercarse.
+        if min_capsule_dist > 0:
+            score += 15.0 / min_capsule_dist
+
+    # 3. Feature: Fantasmas (Ghosts)
+    for ghost_state in ghost_states:
+        ghost_pos = ghost_state.getPosition()
+        dist_to_ghost = manhattanDistance(pacman_pos, ghost_pos)
+
+        if ghost_state.scaredTimer > 0:
+            # Fantasma Asustado: Incentivo alto para comerlo
+            if dist_to_ghost > 0:
+                # 250.0 es un peso alto para priorizar comerlos.
+                score += 250.0 / dist_to_ghost
+            else:
+                score += 250.0 # Ya se lo comió (puntuación positiva directa)
+        else:
+            # Fantasma Activo: Penalización si está cerca
+            if dist_to_ghost <= 1:
+                # Penalización extrema si está justo al lado (peligro de muerte)
+                score -= 1000.0
+            elif dist_to_ghost <= 3:
+                # Penalización fuerte si está cerca
+                score -= 50.0 / dist_to_ghost 
+                
+    return score
 
 
 # Abbreviation
