@@ -13,6 +13,7 @@
 
 
 import random
+import sys # Importado para usar un valor de infinito
 
 import util
 from game import Agent
@@ -122,27 +123,82 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action from the current gameState using self.depth
         and self.evaluationFunction.
-
-        Here are some method calls that might be useful when implementing minimax.
-
-        gameState.getLegalActions(agentIndex):
-        Returns a list of legal actions for an agent
-        agentIndex=0 means Pacman, ghosts are >= 1
-
-        gameState.generateSuccessor(agentIndex, action):
-        Returns the successor game state after an agent takes an action
-
-        gameState.getNumAgents():
-        Returns the total number of agents in the game
-
-        gameState.isWin():
-        Returns whether or not the game state is a winning state
-
-        gameState.isLose():
-        Returns whether or not the game state is a losing state
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        # Llama a la función principal de Minimax (maxValue, ya que Pacman es el agente 0)
+        # Retorna el par (score, action). Solo necesitamos la acción.
+        _, action = self.maxValue(game_state, 0, 0)
+        return action
+    
+    # Función de utilidad para alternar entre MAX y MIN.
+    def value(self, gameState, agentIndex, currentDepth):
+        # Si Pacman (agente 0), maximiza.
+        if agentIndex == 0:
+            return self.maxValue(gameState, agentIndex, currentDepth)
+        # Si un fantasma (agente > 0), minimiza.
+        else:
+            return self.minValue(gameState, agentIndex, currentDepth)
+
+    # Nodos MAX: Pacman (agente 0)
+    def maxValue(self, gameState, agentIndex, currentDepth):
+        # Caso base: estado terminal (win/lose) o límite de profundidad
+        if gameState.isWin() or gameState.isLose() or currentDepth == self.depth:
+            # Retorna (score, action=None)
+            return (self.evaluationFunction(gameState), None)
+
+        v = -sys.maxsize  # Inicializa con -infinito
+        bestAction = None
+        
+        # Iterar sobre las acciones legales
+        for action in gameState.getLegalActions(agentIndex):
+            # Generar el estado sucesor
+            successorState = gameState.generateSuccessor(agentIndex, action)
+            
+            # Llamar a la siguiente capa del árbol: el primer fantasma (agentIndex + 1)
+            # La profundidad se mantiene en el mismo "ciclo" de agentes
+            score, _ = self.value(successorState, agentIndex + 1, currentDepth)
+
+            # Actualizar si se encuentra un valor mayor
+            if score > v:
+                v = score
+                bestAction = action
+        
+        return (v, bestAction)
+
+    # Nodos MIN: Fantasmas (agentes > 0)
+    def minValue(self, gameState, agentIndex, currentDepth):
+        # Caso base: estado terminal (win/lose) o límite de profundidad
+        if gameState.isWin() or gameState.isLose() or currentDepth == self.depth:
+            # Retorna (score, action=None)
+            return (self.evaluationFunction(gameState), None)
+        
+        v = sys.maxsize  # Inicializa con +infinito
+        bestAction = None
+        
+        # Iterar sobre las acciones legales
+        for action in gameState.getLegalActions(agentIndex):
+            # Generar el estado sucesor
+            successorState = gameState.generateSuccessor(agentIndex, action)
+            
+            # Determinar el siguiente agente y profundidad
+            nextAgentIndex = agentIndex + 1
+            nextDepth = currentDepth
+            
+            # Si el agente actual es el ÚLTIMO fantasma, pasamos a Pacman y AUMENTAMOS la profundidad
+            if nextAgentIndex == gameState.getNumAgents():
+                nextAgentIndex = 0 # Pacman
+                nextDepth += 1     # Siguiente nivel (incremento de profundidad)
+
+            # Llamar a la siguiente capa del árbol
+            score, _ = self.value(successorState, nextAgentIndex, nextDepth)
+
+            # Actualizar si se encuentra un valor menor
+            if score < v:
+                v = score
+                bestAction = action
+        
+        return (v, bestAction)
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
