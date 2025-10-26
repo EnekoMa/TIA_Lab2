@@ -223,7 +223,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-               def alphabeta(agentIndex, depth, state, alpha, beta):
+        "*** YOUR CODE HERE ***"
+
+        def alphabeta(agentIndex, depth, state, alpha, beta):
             if state.isWin() or state.isLose() or depth == self.depth:
                 return self.evaluationFunction(state)
 
@@ -417,4 +419,5 @@ def betterEvaluationFunction(currentGameState):
 
 # Abbreviation
 better = betterEvaluationFunction
+
 
